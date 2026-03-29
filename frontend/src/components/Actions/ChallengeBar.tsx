@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Button, Stack, Typography, Menu, MenuItem, Box } from '@mui/material';
 import { motion } from 'framer-motion';
 import { coupColors } from '../../theme/ThemeProvider';
 import type { PendingAction, CardType, PlayerState } from '../../types';
+
+const MIN_DISPLAY_MS = 3000;
 
 export interface ChallengeBarProps {
   pendingAction: PendingAction;
@@ -28,15 +30,53 @@ export default function ChallengeBar({
   players,
 }: ChallengeBarProps) {
   const [blockAnchor, setBlockAnchor] = useState<HTMLElement | null>(null);
+  const [responded, setResponded] = useState(false);
+  const [animDuration] = useState(() => Math.max(timeLeft, MIN_DISPLAY_MS) / 1000);
+  const onPassRef = useRef(onPass);
+  const timerMs = useRef(Math.max(timeLeft, MIN_DISPLAY_MS));
 
   useEffect(() => {
-    if (timeLeft <= 0) {
-      onPass();
-      return;
-    }
-    const timer = setTimeout(() => onPass(), timeLeft);
+    onPassRef.current = onPass;
+  }, [onPass]);
+
+  useEffect(() => {
+    setResponded(false);
+    timerMs.current = Math.max(timeLeft, MIN_DISPLAY_MS);
+  }, [pendingAction.actorId, pendingAction.action, timeLeft]);
+
+  const safePass = useCallback(() => {
+    setResponded((prev) => {
+      if (prev) return prev;
+      onPassRef.current();
+      return true;
+    });
+  }, []);
+
+  const safeChallenge = useCallback(() => {
+    setResponded((prev) => {
+      if (prev) return prev;
+      onChallenge();
+      return true;
+    });
+  }, [onChallenge]);
+
+  const safeBlock = useCallback(
+    (card: CardType) => {
+      setResponded((prev) => {
+        if (prev) return prev;
+        onBlock(card);
+        return true;
+      });
+    },
+    [onBlock],
+  );
+
+  useEffect(() => {
+    const ms = timerMs.current;
+    if (ms <= 0) return;
+    const timer = setTimeout(safePass, ms);
     return () => clearTimeout(timer);
-  }, [timeLeft, onPass]);
+  }, [safePass]);
 
   const isActor = pendingAction.actorId === myPlayerId;
   if (isActor) return null;
@@ -59,7 +99,7 @@ export default function ChallengeBar({
           style={{ backgroundColor: coupColors.crimsonLight }}
           initial={{ width: '100%' }}
           animate={{ width: '0%' }}
-          transition={{ duration: timeLeft / 1000, ease: 'linear' }}
+          transition={{ duration: animDuration, ease: 'linear' }}
         />
       </div>
 
@@ -89,8 +129,8 @@ export default function ChallengeBar({
           <Button
             variant="contained"
             size="small"
-            disabled={disabled}
-            onClick={onChallenge}
+            disabled={disabled || responded}
+            onClick={safeChallenge}
             sx={{
               background: `linear-gradient(135deg, ${coupColors.crimson}, ${coupColors.crimsonLight})`,
               '&:hover': { background: `linear-gradient(135deg, ${coupColors.crimsonLight}, ${coupColors.crimson})` },
@@ -106,7 +146,7 @@ export default function ChallengeBar({
             <Button
               variant="outlined"
               size="small"
-              disabled={disabled}
+              disabled={disabled || responded}
               onClick={(e) => setBlockAnchor(e.currentTarget)}
               sx={{
                 borderColor: coupColors.gold,
@@ -124,8 +164,8 @@ export default function ChallengeBar({
           <Button
             variant="text"
             size="small"
-            disabled={disabled}
-            onClick={onPass}
+            disabled={disabled || responded}
+            onClick={safePass}
             sx={{
               color: coupColors.textMuted,
               fontSize: { xs: '0.7rem', sm: '0.8rem' },
@@ -148,7 +188,7 @@ export default function ChallengeBar({
           <MenuItem
             key={card}
             onClick={() => {
-              onBlock(card);
+              safeBlock(card);
               setBlockAnchor(null);
             }}
             sx={{ color: coupColors.textPrimary, '&:hover': { bgcolor: `${coupColors.gold}12` } }}

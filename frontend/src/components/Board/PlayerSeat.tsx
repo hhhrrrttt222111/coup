@@ -2,7 +2,7 @@ import { Box, Typography } from '@mui/material';
 import { motion, type Variants } from 'framer-motion';
 import InfluenceCard from '../Cards/InfluenceCard';
 import { coupColors } from '../../theme/ThemeProvider';
-import type { PlayerState, PlayerCard } from '../../types';
+import type { PlayerState, PlayerCard, CardType } from '../../types';
 
 function CoinIcon() {
   return (
@@ -32,9 +32,10 @@ export interface PlayerSeatProps {
   cards: PlayerCard[];
   isCurrentTurn: boolean;
   isMe: boolean;
+  onCardClick?: (card: CardType) => void;
 }
 
-export default function PlayerSeat({ player, cards, isCurrentTurn, isMe }: PlayerSeatProps) {
+export default function PlayerSeat({ player, cards, isCurrentTurn, isMe, onCardClick }: PlayerSeatProps) {
   return (
     <motion.div
       className={`relative rounded-xl ${isMe ? 'p-3 sm:p-4' : 'p-2 sm:p-3'} ${player.isAlive ? '' : 'grayscale'}`}
@@ -125,6 +126,7 @@ export default function PlayerSeat({ player, cards, isCurrentTurn, isMe }: Playe
                 card={c.card}
                 isRevealed
                 isDead={c.is_revealed}
+                onCardClick={onCardClick}
                 compact
               />
             ))
@@ -134,12 +136,13 @@ export default function PlayerSeat({ player, cards, isCurrentTurn, isMe }: Playe
                 card={c.is_revealed ? c.card : null}
                 isRevealed={c.is_revealed}
                 isDead={c.is_revealed}
+                onCardClick={onCardClick}
                 compact
               />
             ))}
 
         {player.revealedCards.map((rc, i) => (
-          <InfluenceCard key={`rev-${i}`} card={rc} isRevealed isDead compact />
+          <InfluenceCard key={`rev-${i}`} card={rc} isRevealed isDead onCardClick={onCardClick} compact />
         ))}
       </Box>
     </motion.div>

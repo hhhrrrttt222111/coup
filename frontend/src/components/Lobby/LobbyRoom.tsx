@@ -34,6 +34,7 @@ export default function LobbyRoom() {
 
   const [name, setName] = useState('');
   const [copied, setCopied] = useState(false);
+  const [nameError, setNameError] = useState('');
 
   const roomCode = state.roomCode ?? '';
   const alreadyJoined = !!state.myPlayerId;
@@ -42,8 +43,18 @@ export default function LobbyRoom() {
 
   const handleJoin = () => {
     if (!socket || !name.trim() || !roomCode) return;
+    const trimmed = name.trim();
+    const taken = players.some(
+      (p) => p.name.toLowerCase() === trimmed.toLowerCase(),
+    );
+    if (taken) {
+      play('error');
+      setNameError('Username already taken. Please choose a different name.');
+      return;
+    }
+    setNameError('');
     play('click');
-    socket.emit('join_room', { roomCode, playerName: name.trim() });
+    socket.emit('join_room', { roomCode, playerName: trimmed });
   };
 
   const handleStart = () => {
@@ -154,10 +165,18 @@ export default function LobbyRoom() {
               <TextField
                 label="Your Name"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (nameError) setNameError('');
+                }}
                 inputProps={{ maxLength: 30 }}
                 fullWidth
                 onFocus={() => play('hover')}
+                error={!!nameError}
+                helperText={nameError || (state.lastError?.message ? state.lastError.message : '')}
+                FormHelperTextProps={{
+                  sx: { color: nameError || state.lastError ? colors.crimsonLight : colors.textMuted },
+                }}
               />
               <Button
                 variant="contained"

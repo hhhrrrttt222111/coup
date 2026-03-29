@@ -62,6 +62,7 @@ export interface InfluenceCardProps {
   isSelectable?: boolean;
   isDead?: boolean;
   onSelect?: (card: CardType) => void;
+  onCardClick?: (card: CardType) => void;
   compact?: boolean;
 }
 
@@ -71,6 +72,7 @@ export default function InfluenceCard({
   isSelectable = false,
   isDead = false,
   onSelect,
+  onCardClick,
   compact = false,
 }: InfluenceCardProps) {
   const showFace = isRevealed && card !== null;
@@ -79,8 +81,14 @@ export default function InfluenceCard({
   const handleClick = () => {
     if (isSelectable && card && onSelect) {
       onSelect(card);
+      return;
+    }
+    if (showFace && card && onCardClick) {
+      onCardClick(card);
     }
   };
+
+  const isClickable = isSelectable || (showFace && !!onCardClick);
 
   const cardHeight = compact ? 'h-32' : 'h-40';
   const cardWidth = compact ? 'w-[5.5rem]' : 'w-28';
@@ -90,12 +98,12 @@ export default function InfluenceCard({
     <motion.div
       variants={hoverVariants}
       initial="idle"
-      whileHover={isSelectable ? 'hover' : undefined}
+      whileHover={isClickable ? 'hover' : undefined}
       style={{ perspective: 800 }}
     >
       <motion.div
-        className={`relative ${cardHeight} ${cardWidth} cursor-default select-none ${
-          isSelectable ? 'cursor-pointer' : ''
+        className={`relative ${cardHeight} ${cardWidth} select-none ${
+          isClickable ? 'cursor-pointer' : 'cursor-default'
         }`}
         variants={flipVariants}
         animate={showFace ? 'faceUp' : 'faceDown'}

@@ -13,6 +13,7 @@ import ActionPanel, { getAvailableActions } from '../Actions/ActionPanel';
 import ChallengeBar from '../Actions/ChallengeBar';
 import GameLog from '../UI/GameLog';
 import WinnerModal from '../UI/WinnerModal';
+import CardDetailModal from '../Cards/CardDetailModal';
 import type { CardType, PlayerCard, PlayerState } from '../../types';
 
 const BLOCK_CARDS: Record<string, readonly CardType[]> = {
@@ -142,6 +143,11 @@ export default function GameBoard() {
   const { performAction, respondToAction, loseInfluence, loading } = useActions();
   const navigate = useNavigate();
   const [logOpen, setLogOpen] = useState(false);
+  const [detailCard, setDetailCard] = useState<CardType | null>(null);
+
+  const handlePassAction = useCallback(() => respondToAction('pass'), [respondToAction]);
+  const handleChallengeAction = useCallback(() => respondToAction('challenge'), [respondToAction]);
+  const handleBlockAction = useCallback((card: CardType) => respondToAction('block', card), [respondToAction]);
 
   const gs = state.gameState;
   const myPlayer = gs ? getMyPlayer(state) : undefined;
@@ -293,6 +299,7 @@ export default function GameBoard() {
               cards={cardsForPlayer(p)}
               isCurrentTurn={p.id === currentPlayerId}
               isMe={false}
+              onCardClick={setDetailCard}
             />
           ))}
         </Box>
@@ -305,6 +312,7 @@ export default function GameBoard() {
               cards={cardsForPlayer(mePlayer)}
               isCurrentTurn={mePlayer.id === currentPlayerId}
               isMe
+              onCardClick={setDetailCard}
             />
           </Box>
         )}
@@ -342,9 +350,9 @@ export default function GameBoard() {
                 <ChallengeBar
                   pendingAction={gs.pendingAction}
                   timeLeft={timeLeft}
-                  onChallenge={() => respondToAction('challenge')}
-                  onBlock={(card: CardType) => respondToAction('block', card)}
-                  onPass={() => respondToAction('pass')}
+                  onChallenge={handleChallengeAction}
+                  onBlock={handleBlockAction}
+                  onPass={handlePassAction}
                   blockOptions={blockOptions}
                   myPlayerId={myId}
                   disabled={false}
@@ -471,6 +479,12 @@ export default function GameBoard() {
             socket.emit('restart_game', { roomCode: state.roomCode });
           }
         }}
+      />
+
+      <CardDetailModal
+        card={detailCard}
+        open={!!detailCard}
+        onClose={() => setDetailCard(null)}
       />
     </Box>
   );
