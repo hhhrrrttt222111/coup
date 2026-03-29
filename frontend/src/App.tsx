@@ -7,6 +7,7 @@ import { GameProvider } from './context/GameContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import Home from './pages/Home';
 import GameRoom from './pages/GameRoom';
+import Rules from './pages/Rules';
 
 interface RouteConfig {
   path: string;
@@ -16,6 +17,7 @@ interface RouteConfig {
 const routes: RouteConfig[] = [
   { path: '/', element: <Home /> },
   { path: '/room/:code', element: <GameRoom /> },
+  { path: '/rules', element: <Rules /> },
 ];
 
 const pageVariants = {

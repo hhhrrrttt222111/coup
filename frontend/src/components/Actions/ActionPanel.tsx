@@ -7,6 +7,7 @@ import {
   MenuItem,
   CircularProgress,
   Chip,
+  Box,
 } from '@mui/material';
 import { ActionType, type PlayerState } from '../../types';
 import { coupColors } from '../../theme/ThemeProvider';
@@ -20,25 +21,23 @@ interface ActionMeta {
 }
 
 const ACTION_DEFS: ActionMeta[] = [
-  { action: ActionType.INCOME,      label: 'Income',                 cost: 0, gain: 1,  needsTarget: false },
-  { action: ActionType.FOREIGN_AID, label: 'Foreign Aid',            cost: 0, gain: 2,  needsTarget: false },
-  { action: ActionType.TAX,         label: 'Tax (Duke)',             cost: 0, gain: 3,  needsTarget: false },
-  { action: ActionType.STEAL,       label: 'Steal (Captain)',        cost: 0,            needsTarget: true },
-  { action: ActionType.ASSASSINATE, label: 'Assassinate',            cost: 3,            needsTarget: true },
-  { action: ActionType.EXCHANGE,    label: 'Exchange (Ambassador)',  cost: 0,            needsTarget: false },
-  { action: ActionType.COUP,        label: 'Coup',                   cost: 7,            needsTarget: true },
+  { action: ActionType.INCOME, label: 'Income', cost: 0, gain: 1, needsTarget: false },
+  { action: ActionType.FOREIGN_AID, label: 'Foreign Aid', cost: 0, gain: 2, needsTarget: false },
+  { action: ActionType.TAX, label: 'Tax (Duke)', cost: 0, gain: 3, needsTarget: false },
+  { action: ActionType.STEAL, label: 'Steal (Captain)', cost: 0, needsTarget: true },
+  { action: ActionType.ASSASSINATE, label: 'Assassinate', cost: 3, needsTarget: true },
+  { action: ActionType.EXCHANGE, label: 'Exchange (Ambassador)', cost: 0, needsTarget: false },
+  { action: ActionType.COUP, label: 'Coup', cost: 7, needsTarget: true },
 ];
 
 export function getAvailableActions(coins: number): ActionType[] {
   if (coins >= 10) return [ActionType.COUP];
 
-  return ACTION_DEFS
-    .filter((a) => {
-      if (a.action === ActionType.ASSASSINATE && coins < 3) return false;
-      if (a.action === ActionType.COUP && coins < 7) return false;
-      return true;
-    })
-    .map((a) => a.action);
+  return ACTION_DEFS.filter((a) => {
+    if (a.action === ActionType.ASSASSINATE && coins < 3) return false;
+    if (a.action === ActionType.COUP && coins < 7) return false;
+    return true;
+  }).map((a) => a.action);
 }
 
 export interface ActionPanelProps {
@@ -83,82 +82,101 @@ export default function ActionPanel({
   const visibleDefs = ACTION_DEFS.filter((a) => availableActions.includes(a.action));
 
   return (
-    <Stack spacing={1.5}>
-      <Typography
-        variant="h6"
-        sx={{ color: coupColors.gold, fontWeight: 800, fontFamily: '"Cinzel", serif', fontSize: '1rem' }}
-      >
-        Your Turn — Choose an Action
-      </Typography>
+    <Box
+      className="rounded-xl p-3 sm:p-4"
+      sx={{
+        bgcolor: `${coupColors.surface}ee`,
+        border: `1px solid ${coupColors.gold}20`,
+        backdropFilter: 'blur(8px)',
+      }}
+    >
+      <Stack spacing={1.5}>
+        <Typography
+          sx={{
+            color: coupColors.gold,
+            fontWeight: 800,
+            fontFamily: '"Cinzel", serif',
+            fontSize: { xs: '0.8rem', sm: '1rem' },
+          }}
+        >
+          Your Turn — Choose an Action
+        </Typography>
 
-      <Stack direction="row" flexWrap="wrap" gap={1}>
-        {visibleDefs.map((meta) => {
-          const isLoading = !!loading[meta.action];
+        <Stack direction="row" flexWrap="wrap" gap={1}>
+          {visibleDefs.map((meta) => {
+            const isLoading = !!loading[meta.action];
 
-          return (
-            <Button
-              key={meta.action}
-              variant="outlined"
-              size="small"
-              disabled={disabled || isLoading}
-              onClick={(e) => handleClick(meta, e.currentTarget)}
-              sx={{
-                borderColor: `${coupColors.gold}30`,
-                color: coupColors.textPrimary,
-                position: 'relative',
-                '&:hover': { borderColor: coupColors.gold, bgcolor: `${coupColors.gold}0a` },
-              }}
-            >
-              {isLoading && (
-                <CircularProgress
-                  size={20}
-                  sx={{ color: coupColors.gold, position: 'absolute', left: '50%', ml: '-10px' }}
-                />
-              )}
-              <span className={isLoading ? 'opacity-0' : ''}>
-                {meta.label}
-                {(meta.cost > 0 || meta.gain) && (
-                  <Chip
-                    label={meta.cost > 0 ? `-${meta.cost}` : `+${meta.gain}`}
-                    size="small"
-                    sx={{
-                      ml: 0.5,
-                      height: 18,
-                      fontSize: '0.65rem',
-                      bgcolor: meta.cost > 0 ? `${coupColors.crimson}30` : `${coupColors.gold}20`,
-                      color: meta.cost > 0 ? coupColors.crimsonLight : coupColors.gold,
-                    }}
+            return (
+              <Button
+                key={meta.action}
+                variant="outlined"
+                size="small"
+                disabled={disabled || isLoading}
+                onClick={(e) => handleClick(meta, e.currentTarget)}
+                sx={{
+                  borderColor: `${coupColors.gold}30`,
+                  color: coupColors.textPrimary,
+                  position: 'relative',
+                  fontSize: { xs: '0.7rem', sm: '0.8rem' },
+                  px: { xs: 1.5, sm: 2 },
+                  py: { xs: 0.6, sm: 0.8 },
+                  '&:hover': { borderColor: coupColors.gold, bgcolor: `${coupColors.gold}0a` },
+                }}
+              >
+                {isLoading && (
+                  <CircularProgress
+                    size={18}
+                    sx={{ color: coupColors.gold, position: 'absolute', left: '50%', ml: '-9px' }}
                   />
                 )}
-              </span>
-            </Button>
-          );
-        })}
-      </Stack>
+                <span className={isLoading ? 'opacity-0' : ''}>
+                  {meta.label}
+                  {(meta.cost > 0 || meta.gain) && (
+                    <Chip
+                      label={meta.cost > 0 ? `-${meta.cost}` : `+${meta.gain}`}
+                      size="small"
+                      sx={{
+                        ml: 0.5,
+                        height: 16,
+                        fontSize: '0.6rem',
+                        bgcolor: meta.cost > 0 ? `${coupColors.crimson}30` : `${coupColors.gold}20`,
+                        color: meta.cost > 0 ? coupColors.crimsonLight : coupColors.gold,
+                      }}
+                    />
+                  )}
+                </span>
+              </Button>
+            );
+          })}
+        </Stack>
 
-      <Menu
-        anchorEl={targetMenuAnchor}
-        open={!!targetMenuAnchor}
-        onClose={() => { setTargetMenuAnchor(null); setPendingAction(null); }}
-      >
-        <MenuItem disabled sx={{ opacity: 0.5, fontSize: '0.75rem' }}>
-          Choose a target
-        </MenuItem>
-        {targets.map((t) => (
-          <MenuItem
-            key={t.id}
-            onClick={() => handleTargetSelect(t.id)}
-            sx={{ color: coupColors.textPrimary, '&:hover': { bgcolor: `${coupColors.crimson}15` } }}
-          >
-            {t.name}
-            <Chip
-              label={`${t.coins}¢`}
-              size="small"
-              sx={{ ml: 1, height: 18, fontSize: '0.65rem', bgcolor: `${coupColors.gold}20`, color: coupColors.gold }}
-            />
+        <Menu
+          anchorEl={targetMenuAnchor}
+          open={!!targetMenuAnchor}
+          onClose={() => {
+            setTargetMenuAnchor(null);
+            setPendingAction(null);
+          }}
+        >
+          <MenuItem disabled sx={{ opacity: 0.5, fontSize: '0.75rem' }}>
+            Choose a target
           </MenuItem>
-        ))}
-      </Menu>
-    </Stack>
+          {targets.map((t) => (
+            <MenuItem
+              key={t.id}
+              onClick={() => handleTargetSelect(t.id)}
+              sx={{ color: coupColors.textPrimary, '&:hover': { bgcolor: `${coupColors.crimson}15` } }}
+            >
+              {t.name}
+              <Chip
+                label={`${t.coins}¢`}
+                size="small"
+                sx={{ ml: 1, height: 18, fontSize: '0.65rem', bgcolor: `${coupColors.gold}20`, color: coupColors.gold }}
+              />
+            </MenuItem>
+          ))}
+        </Menu>
+      </Stack>
+    </Box>
   );
 }

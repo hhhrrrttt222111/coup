@@ -1,6 +1,9 @@
 import { useMemo, useState, useCallback } from 'react';
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Typography, Button, IconButton, Drawer } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
+import HomeIcon from '@mui/icons-material/Home';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import { useNavigate } from 'react-router-dom';
 import { useGame, isMyTurn, getMyPlayer, getAlivePlayers } from '../../context/GameContext';
 import { useSocket } from '../../context/SocketContext';
 import { coupColors } from '../../theme/ThemeProvider';
@@ -15,7 +18,7 @@ import type { CardType, PlayerCard, PlayerState } from '../../types';
 const BLOCK_CARDS: Record<string, readonly CardType[]> = {
   foreign_aid: ['Duke'],
   assassinate: ['Contessa'],
-  steal:       ['Captain', 'Ambassador'],
+  steal: ['Captain', 'Ambassador'],
 };
 
 function ExchangePanel({
@@ -29,11 +32,14 @@ function ExchangePanel({
 }) {
   const [selected, setSelected] = useState<number[]>([]);
 
-  const toggle = useCallback((idx: number) => {
-    setSelected((prev) =>
-      prev.includes(idx) ? prev.filter((i) => i !== idx) : prev.length < keepCount ? [...prev, idx] : prev,
-    );
-  }, [keepCount]);
+  const toggle = useCallback(
+    (idx: number) => {
+      setSelected((prev) =>
+        prev.includes(idx) ? prev.filter((i) => i !== idx) : prev.length < keepCount ? [...prev, idx] : prev,
+      );
+    },
+    [keepCount],
+  );
 
   const handleConfirm = useCallback(() => {
     const cards = selected.map((i) => exchangeCards[i]);
@@ -42,20 +48,29 @@ function ExchangePanel({
 
   return (
     <Box
-      className="mt-4 rounded-xl p-4 text-center"
+      className="mt-3 rounded-xl p-3 sm:p-4 text-center"
       sx={{
-        bgcolor: coupColors.surface,
+        bgcolor: `${coupColors.surface}ee`,
         border: `1px solid ${coupColors.gold}30`,
+        backdropFilter: 'blur(8px)',
       }}
     >
-      <Typography variant="body1" sx={{ color: coupColors.gold, fontWeight: 700, mb: 1, fontFamily: '"Cinzel", serif' }}>
+      <Typography
+        sx={{
+          color: coupColors.gold,
+          fontWeight: 700,
+          mb: 1,
+          fontFamily: '"Cinzel", serif',
+          fontSize: { xs: '0.8rem', sm: '0.9rem' },
+        }}
+      >
         Exchange — pick {keepCount} card{keepCount > 1 ? 's' : ''} to keep
       </Typography>
-      <Box className="mb-3 flex flex-wrap justify-center gap-3">
+      <Box className="mb-3 flex flex-wrap justify-center gap-2">
         {exchangeCards.map((card, i) => (
           <motion.button
             key={i}
-            className="cursor-pointer rounded-lg border-2 px-4 py-3 text-white transition-colors"
+            className="cursor-pointer rounded-lg border-2 px-3 py-2 text-white transition-colors sm:px-4 sm:py-3"
             style={{
               borderColor: selected.includes(i) ? coupColors.gold : 'rgba(255,255,255,0.15)',
               backgroundColor: selected.includes(i) ? `${coupColors.gold}15` : coupColors.charcoal,
@@ -64,7 +79,9 @@ function ExchangePanel({
             whileTap={{ scale: 0.95 }}
             onClick={() => toggle(i)}
           >
-            <Typography variant="body2" sx={{ fontWeight: 700 }}>{card}</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 700, fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
+              {card}
+            </Typography>
           </motion.button>
         ))}
       </Box>
@@ -77,6 +94,7 @@ function ExchangePanel({
           color: coupColors.charcoal,
           '&:hover': { bgcolor: coupColors.goldLight },
           fontWeight: 700,
+          fontSize: { xs: '0.8rem', sm: '0.9rem' },
         }}
       >
         Confirm Selection
@@ -85,10 +103,45 @@ function ExchangePanel({
   );
 }
 
+function GameBackground() {
+  return (
+    <Box
+      className="pointer-events-none fixed inset-0"
+      sx={{ zIndex: 0 }}
+    >
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          background: `
+            radial-gradient(ellipse at 20% 20%, rgba(139,26,43,0.08) 0%, transparent 50%),
+            radial-gradient(ellipse at 80% 80%, rgba(74,158,161,0.06) 0%, transparent 50%),
+            radial-gradient(ellipse at 50% 50%, rgba(201,168,76,0.04) 0%, transparent 60%),
+            linear-gradient(180deg, ${coupColors.charcoal} 0%, #0a1018 100%)
+          `,
+        }}
+      />
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: `
+            radial-gradient(circle at 25% 25%, rgba(201,168,76,0.03) 1px, transparent 1px),
+            radial-gradient(circle at 75% 75%, rgba(139,26,43,0.03) 1px, transparent 1px)
+          `,
+          backgroundSize: '40px 40px',
+        }}
+      />
+    </Box>
+  );
+}
+
 export default function GameBoard() {
   const { state } = useGame();
   const { socket } = useSocket();
   const { performAction, respondToAction, loseInfluence, loading } = useActions();
+  const navigate = useNavigate();
+  const [logOpen, setLogOpen] = useState(false);
 
   const gs = state.gameState;
   const myPlayer = gs ? getMyPlayer(state) : undefined;
@@ -97,9 +150,9 @@ export default function GameBoard() {
 
   if (!gs) return null;
 
-  const myTurn   = isMyTurn(state);
-  const alive    = getAlivePlayers(state);
-  const players  = Object.values(gs.players);
+  const myTurn = isMyTurn(state);
+  const alive = getAlivePlayers(state);
+  const players = Object.values(gs.players);
 
   const myId = state.myPlayerId ?? '';
   const currentPlayerId = gs.turnOrder[gs.currentTurnIndex];
@@ -135,7 +188,7 @@ export default function GameBoard() {
   const showWinner = !!state.winner;
 
   const playersMap = gs.players;
-  const nameOf = (id: unknown) => typeof id === 'string' ? (playersMap[id]?.name ?? 'Unknown') : '';
+  const nameOf = (id: unknown) => (typeof id === 'string' ? playersMap[id]?.name ?? 'Unknown' : '');
 
   const lastEvent = gs.events.length > 0 ? gs.events[gs.events.length - 1] : null;
   const lastActionText = (() => {
@@ -158,51 +211,106 @@ export default function GameBoard() {
     }
   })();
 
+  const mePlayer = players.find((p) => p.id === myId);
+  const otherPlayers = players.filter((p) => p.id !== myId);
+
   return (
-    <Box className="flex min-h-screen" sx={{ bgcolor: coupColors.charcoal }}>
-      <Box className="flex flex-1 flex-col p-4">
-        {/* Player grid */}
-        <Box className="mx-auto grid w-full max-w-5xl grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3">
-          {players.map((p) => (
+    <Box className="relative min-h-screen" sx={{ bgcolor: coupColors.charcoal }}>
+      <GameBackground />
+
+      {/* Top bar */}
+      <Box
+        className="sticky top-0 z-20 flex items-center justify-between px-3 py-2 sm:px-4"
+        sx={{
+          bgcolor: `${coupColors.charcoal}ee`,
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          backdropFilter: 'blur(12px)',
+        }}
+      >
+        <IconButton
+          size="small"
+          onClick={() => navigate('/')}
+          sx={{ color: coupColors.textMuted, '&:hover': { color: coupColors.gold } }}
+        >
+          <HomeIcon fontSize="small" />
+        </IconButton>
+
+        {/* Treasury compact */}
+        <Box className="flex items-center gap-1.5">
+          <Typography
+            sx={{
+              color: coupColors.textMuted,
+              fontSize: '0.6rem',
+              letterSpacing: 2,
+              fontFamily: '"Cinzel", serif',
+            }}
+          >
+            TREASURY
+          </Typography>
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+            <circle cx="10" cy="10" r="9" fill={coupColors.gold} stroke={coupColors.goldDark} strokeWidth="1.5" />
+            <text x="10" y="14" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#6b4c00">
+              ¢
+            </text>
+          </svg>
+          <Typography sx={{ color: coupColors.gold, fontWeight: 800, fontSize: '0.9rem' }}>
+            {50 - players.reduce((s, p) => s + p.coins, 0)}
+          </Typography>
+        </Box>
+
+        <IconButton
+          size="small"
+          onClick={() => setLogOpen(true)}
+          sx={{ color: coupColors.textMuted, '&:hover': { color: coupColors.gold } }}
+        >
+          <MenuBookIcon fontSize="small" />
+        </IconButton>
+      </Box>
+
+      <Box className="relative z-10 flex flex-col pb-4">
+        {/* Last action banner */}
+        {lastActionText && (
+          <Box
+            className="mx-3 mt-2 rounded-lg px-3 py-1.5 text-center sm:mx-4"
+            sx={{
+              bgcolor: `${coupColors.surface}80`,
+              border: '1px solid rgba(255,255,255,0.04)',
+              backdropFilter: 'blur(4px)',
+            }}
+          >
+            <Typography sx={{ color: coupColors.textMuted, fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+              {lastActionText}
+            </Typography>
+          </Box>
+        )}
+
+        {/* Opponents grid */}
+        <Box className="mx-auto mt-3 grid w-full max-w-3xl grid-cols-2 gap-2 px-3 sm:gap-3 sm:px-4 md:grid-cols-3">
+          {otherPlayers.map((p) => (
             <PlayerSeat
               key={p.id}
               player={p}
               cards={cardsForPlayer(p)}
               isCurrentTurn={p.id === currentPlayerId}
-              isMe={p.id === myId}
+              isMe={false}
             />
           ))}
         </Box>
 
-        {/* Treasury */}
-        <Box
-          className="mx-auto my-6 flex w-full max-w-sm flex-col items-center gap-2 rounded-xl p-4"
-          sx={{
-            bgcolor: coupColors.surface,
-            border: '1px solid rgba(255,255,255,0.04)',
-          }}
-        >
-          <Typography variant="caption" sx={{ color: coupColors.textMuted, letterSpacing: 2, fontSize: '0.65rem' }}>
-            TREASURY
-          </Typography>
-          <Box className="flex items-center gap-1">
-            <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
-              <circle cx="10" cy="10" r="9" fill={coupColors.gold} stroke={coupColors.goldDark} strokeWidth="1.5" />
-              <text x="10" y="14" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#6b4c00">¢</text>
-            </svg>
-            <Typography variant="h6" sx={{ color: coupColors.gold, fontWeight: 800 }}>
-              {50 - players.reduce((s, p) => s + p.coins, 0)}
-            </Typography>
+        {/* My player seat - always at the bottom, full width on mobile */}
+        {mePlayer && (
+          <Box className="mx-auto mt-3 w-full max-w-3xl px-3 sm:px-4">
+            <PlayerSeat
+              player={mePlayer}
+              cards={cardsForPlayer(mePlayer)}
+              isCurrentTurn={mePlayer.id === currentPlayerId}
+              isMe
+            />
           </Box>
-          {lastActionText && (
-            <Typography variant="caption" sx={{ color: coupColors.textMuted, textAlign: 'center', fontSize: '0.7rem' }}>
-              {lastActionText}
-            </Typography>
-          )}
-        </Box>
+        )}
 
         {/* Bottom panel */}
-        <Box className="mx-auto w-full max-w-3xl">
+        <Box className="mx-auto mt-2 w-full max-w-3xl px-3 sm:px-4">
           <AnimatePresence mode="wait">
             {showActionPanel && (
               <motion.div
@@ -249,20 +357,29 @@ export default function GameBoard() {
           {/* Lose influence prompt */}
           {gs.phase === 'lose_influence' && gs.losInfluencePlayerId === myId && (
             <Box
-              className="mt-4 rounded-xl p-4 text-center"
+              className="mt-3 rounded-xl p-3 sm:p-4 text-center"
               sx={{
-                bgcolor: coupColors.surface,
+                bgcolor: `${coupColors.surface}ee`,
                 border: `1px solid ${coupColors.crimson}40`,
+                backdropFilter: 'blur(8px)',
               }}
             >
-              <Typography variant="body1" sx={{ color: coupColors.crimsonLight, fontWeight: 700, mb: 1, fontFamily: '"Cinzel", serif' }}>
-                You must lose an influence — choose a card to reveal
+              <Typography
+                sx={{
+                  color: coupColors.crimsonLight,
+                  fontWeight: 700,
+                  mb: 1,
+                  fontFamily: '"Cinzel", serif',
+                  fontSize: { xs: '0.8rem', sm: '0.9rem' },
+                }}
+              >
+                You must lose an influence — choose a card
               </Typography>
-              <Box className="flex justify-center gap-3">
+              <Box className="flex justify-center gap-2 sm:gap-3">
                 {(state.myCards as CardType[]).map((card, i) => (
                   <motion.button
                     key={i}
-                    className="cursor-pointer rounded-lg border-2 px-4 py-2 text-white transition-colors"
+                    className="cursor-pointer rounded-lg border-2 px-3 py-2 text-white transition-colors sm:px-4"
                     style={{
                       borderColor: `${coupColors.crimson}60`,
                       backgroundColor: coupColors.charcoal,
@@ -271,7 +388,9 @@ export default function GameBoard() {
                     whileTap={{ scale: 0.95 }}
                     onClick={() => loseInfluence(i)}
                   >
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>{card}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
+                      {card}
+                    </Typography>
                   </motion.button>
                 ))}
               </Box>
@@ -292,10 +411,10 @@ export default function GameBoard() {
           )}
           {gs.phase === 'exchange_return' && !gs.exchangeCards && (
             <Box
-              className="mt-4 rounded-xl p-4 text-center"
-              sx={{ bgcolor: coupColors.surface, border: '1px solid rgba(255,255,255,0.06)' }}
+              className="mt-3 rounded-xl p-3 sm:p-4 text-center"
+              sx={{ bgcolor: `${coupColors.surface}ee`, border: '1px solid rgba(255,255,255,0.06)' }}
             >
-              <Typography variant="body2" sx={{ color: coupColors.textMuted, fontStyle: 'italic' }}>
+              <Typography variant="body2" sx={{ color: coupColors.textMuted, fontStyle: 'italic', fontSize: { xs: '0.75rem', sm: '0.85rem' } }}>
                 {nameOf(gs.turnOrder[gs.currentTurnIndex])} is choosing cards to keep...
               </Typography>
             </Box>
@@ -303,22 +422,47 @@ export default function GameBoard() {
         </Box>
       </Box>
 
-      {/* Right sidebar */}
+      {/* Game Log drawer for mobile, sidebar for desktop */}
       <Box
-        className="hidden w-80 flex-shrink-0 p-4 lg:block"
+        className="hidden xl:block"
         sx={{
-          bgcolor: coupColors.darkSlate,
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          width: 280,
+          height: '100vh',
+          bgcolor: `${coupColors.darkSlate}f5`,
           borderLeft: '1px solid rgba(255,255,255,0.04)',
+          p: 2,
+          pt: 3,
+          zIndex: 15,
+          backdropFilter: 'blur(12px)',
         }}
       >
         <GameLog />
       </Box>
 
+      <Drawer
+        anchor="right"
+        open={logOpen}
+        onClose={() => setLogOpen(false)}
+        PaperProps={{
+          sx: {
+            bgcolor: coupColors.darkSlate,
+            width: { xs: '85vw', sm: 320 },
+            maxWidth: 360,
+            p: 2,
+            pt: 3,
+          },
+        }}
+        className="xl:hidden"
+      >
+        <GameLog />
+      </Drawer>
+
       <WinnerModal
         winner={
-          state.winner
-            ? { id: state.winner.winnerId, name: state.winner.winnerName }
-            : null
+          state.winner ? { id: state.winner.winnerId, name: state.winner.winnerName } : null
         }
         open={showWinner}
         isMe={state.winner?.winnerId === myId}

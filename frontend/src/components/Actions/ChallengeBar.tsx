@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button, Stack, Typography, Menu, MenuItem } from '@mui/material';
+import { Button, Stack, Typography, Menu, MenuItem, Box } from '@mui/material';
 import { motion } from 'framer-motion';
 import { coupColors } from '../../theme/ThemeProvider';
 import type { PendingAction, CardType, PlayerState } from '../../types';
@@ -45,12 +45,12 @@ export default function ChallengeBar({
   const actionLabel = pendingAction.action.replace(/_/g, ' ');
 
   return (
-    <Stack
-      spacing={1.5}
-      className="relative rounded-xl p-4"
+    <Box
+      className="relative rounded-xl p-3 sm:p-4"
       sx={{
-        bgcolor: coupColors.surface,
+        bgcolor: `${coupColors.surface}ee`,
         border: '1px solid rgba(255,255,255,0.06)',
+        backdropFilter: 'blur(8px)',
       }}
     >
       <div className="absolute left-0 top-0 h-1 w-full overflow-hidden rounded-t-xl">
@@ -63,65 +63,77 @@ export default function ChallengeBar({
         />
       </div>
 
-      <Typography variant="body2" sx={{ color: coupColors.textSecondary }}>
-        <Typography component="span" sx={{ color: coupColors.gold, fontWeight: 700 }}>
-          {actorName}
-        </Typography>
-        {' '}declared{' '}
-        <Typography component="span" sx={{ color: coupColors.crimsonLight, fontWeight: 700 }}>
-          {actionLabel}
-        </Typography>
-        {pendingAction.claimedCard && (
-          <>
-            {' '}claiming{' '}
-            <Typography component="span" sx={{ fontWeight: 700, color: coupColors.textPrimary }}>
-              {pendingAction.claimedCard}
-            </Typography>
-          </>
-        )}
-      </Typography>
-
-      <Stack direction="row" spacing={1}>
-        <Button
-          variant="contained"
-          size="small"
-          disabled={disabled}
-          onClick={onChallenge}
-          sx={{
-            background: `linear-gradient(135deg, ${coupColors.crimson}, ${coupColors.crimsonLight})`,
-            '&:hover': { background: `linear-gradient(135deg, ${coupColors.crimsonLight}, ${coupColors.crimson})` },
-            fontWeight: 700,
-          }}
+      <Stack spacing={1.5}>
+        <Typography
+          variant="body2"
+          sx={{ color: coupColors.textSecondary, fontSize: { xs: '0.75rem', sm: '0.85rem' } }}
         >
-          Challenge
-        </Button>
+          <Typography component="span" sx={{ color: coupColors.gold, fontWeight: 700 }}>
+            {actorName}
+          </Typography>
+          {' '}declared{' '}
+          <Typography component="span" sx={{ color: coupColors.crimsonLight, fontWeight: 700 }}>
+            {actionLabel}
+          </Typography>
+          {pendingAction.claimedCard && (
+            <>
+              {' '}claiming{' '}
+              <Typography component="span" sx={{ fontWeight: 700, color: coupColors.textPrimary }}>
+                {pendingAction.claimedCard}
+              </Typography>
+            </>
+          )}
+        </Typography>
 
-        {blockOptions.length > 0 && (
+        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
           <Button
-            variant="outlined"
+            variant="contained"
             size="small"
             disabled={disabled}
-            onClick={(e) => setBlockAnchor(e.currentTarget)}
+            onClick={onChallenge}
             sx={{
-              borderColor: coupColors.gold,
-              color: coupColors.gold,
+              background: `linear-gradient(135deg, ${coupColors.crimson}, ${coupColors.crimsonLight})`,
+              '&:hover': { background: `linear-gradient(135deg, ${coupColors.crimsonLight}, ${coupColors.crimson})` },
               fontWeight: 700,
-              '&:hover': { bgcolor: `${coupColors.gold}0a` },
+              fontSize: { xs: '0.7rem', sm: '0.8rem' },
+              px: { xs: 1.5, sm: 2 },
             }}
           >
-            Block
+            Challenge
           </Button>
-        )}
 
-        <Button
-          variant="text"
-          size="small"
-          disabled={disabled}
-          onClick={onPass}
-          sx={{ color: coupColors.textMuted }}
-        >
-          Pass
-        </Button>
+          {blockOptions.length > 0 && (
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={disabled}
+              onClick={(e) => setBlockAnchor(e.currentTarget)}
+              sx={{
+                borderColor: coupColors.gold,
+                color: coupColors.gold,
+                fontWeight: 700,
+                fontSize: { xs: '0.7rem', sm: '0.8rem' },
+                px: { xs: 1.5, sm: 2 },
+                '&:hover': { bgcolor: `${coupColors.gold}0a` },
+              }}
+            >
+              Block
+            </Button>
+          )}
+
+          <Button
+            variant="text"
+            size="small"
+            disabled={disabled}
+            onClick={onPass}
+            sx={{
+              color: coupColors.textMuted,
+              fontSize: { xs: '0.7rem', sm: '0.8rem' },
+            }}
+          >
+            Pass
+          </Button>
+        </Stack>
       </Stack>
 
       <Menu
@@ -135,13 +147,16 @@ export default function ChallengeBar({
         {blockOptions.map((card) => (
           <MenuItem
             key={card}
-            onClick={() => { onBlock(card); setBlockAnchor(null); }}
+            onClick={() => {
+              onBlock(card);
+              setBlockAnchor(null);
+            }}
             sx={{ color: coupColors.textPrimary, '&:hover': { bgcolor: `${coupColors.gold}12` } }}
           >
             {card}
           </MenuItem>
         ))}
       </Menu>
-    </Stack>
+    </Box>
   );
 }

@@ -20,6 +20,8 @@ import { createRoom, joinRoom, isApiError } from '../api/roomApi';
 import { storeSession } from '../types/session';
 import { useCoupTheme } from '../theme/ThemeProvider';
 import { useSoundEffects } from '../hooks/useSoundEffects';
+import CharacterAvatar from '../components/Cards/CharacterAvatars';
+import type { CardType } from '../types';
 
 interface HomeFormState {
   playerName: string;
@@ -39,12 +41,19 @@ const initialForm: HomeFormState = {
   error: null,
 };
 
-const CHARACTERS = [
-  { name: 'Duke', power: 'Tax', description: 'Takes 3 coins from the treasury. Blocks Foreign Aid.' },
-  { name: 'Assassin', power: 'Assassinate', description: 'Pays 3 coins to eliminate an influence.' },
-  { name: 'Contessa', power: 'Block', description: 'Blocks assassination attempts.' },
-  { name: 'Captain', power: 'Steal', description: 'Takes 2 coins from another player. Blocks stealing.' },
-  { name: 'Ambassador', power: 'Exchange', description: 'Swaps cards with the Court deck. Blocks stealing.' },
+interface CharacterShowcase {
+  name: CardType;
+  power: string;
+  description: string;
+  accent: string;
+}
+
+const CHARACTERS: CharacterShowcase[] = [
+  { name: 'Duke', power: 'Tax', description: 'Takes 3 coins from the treasury. Blocks Foreign Aid.', accent: '#8b5cf6' },
+  { name: 'Assassin', power: 'Assassinate', description: 'Pays 3 coins to eliminate an influence.', accent: '#6b7280' },
+  { name: 'Contessa', power: 'Block', description: 'Blocks assassination attempts.', accent: '#ef4444' },
+  { name: 'Captain', power: 'Steal', description: 'Takes 2 coins from another player. Blocks stealing.', accent: '#3b82f6' },
+  { name: 'Ambassador', power: 'Exchange', description: 'Swaps cards with the Court deck. Blocks stealing.', accent: '#22c55e' },
 ];
 
 const container = {
@@ -59,46 +68,6 @@ const item = {
   hidden: { opacity: 0, y: 30 },
   show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 200, damping: 22 } },
 };
-
-const floatingParticle = {
-  animate: (i: number) => ({
-    y: [0, -20, 0],
-    x: [0, Math.sin(i) * 10, 0],
-    opacity: [0.1, 0.3, 0.1],
-    transition: {
-      duration: 3 + i * 0.5,
-      repeat: Infinity,
-      ease: 'easeInOut' as const,
-      delay: i * 0.3,
-    },
-  }),
-};
-
-function FloatingParticles() {
-  return (
-    <Box className="pointer-events-none absolute inset-0 overflow-hidden">
-      {Array.from({ length: 12 }, (_, i) => (
-        <motion.div
-          key={i}
-          custom={i}
-          animate={floatingParticle.animate(i)}
-          className="absolute rounded-full"
-          style={{
-            width: 2 + Math.random() * 3,
-            height: 2 + Math.random() * 3,
-            left: `${10 + Math.random() * 80}%`,
-            top: `${10 + Math.random() * 80}%`,
-            background: i % 3 === 0
-              ? 'rgba(201, 168, 76, 0.4)'
-              : i % 3 === 1
-                ? 'rgba(139, 26, 43, 0.4)'
-                : 'rgba(74, 158, 161, 0.3)',
-          }}
-        />
-      ))}
-    </Box>
-  );
-}
 
 function DividerLine() {
   return (
@@ -189,21 +158,17 @@ export default function Home() {
 
   return (
     <Box
-      className="relative flex min-h-screen flex-col items-center justify-start overflow-hidden px-4 py-8"
-      sx={{ bgcolor: colors.charcoal }}
+      className="relative flex min-h-screen flex-col items-center justify-start overflow-hidden px-3 py-6 sm:px-4 sm:py-8"
+      sx={{
+        bgcolor: colors.charcoal,
+        background: `
+          radial-gradient(ellipse at 50% 0%, rgba(139,26,43,0.12) 0%, transparent 60%),
+          radial-gradient(ellipse at 20% 80%, rgba(74,158,161,0.06) 0%, transparent 50%),
+          radial-gradient(ellipse at 80% 60%, rgba(201,168,76,0.04) 0%, transparent 50%),
+          linear-gradient(180deg, ${colors.charcoal} 0%, #0a1018 100%)
+        `,
+      }}
     >
-      <FloatingParticles />
-
-      {/* Radial glow behind title */}
-      <Box
-        className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2"
-        sx={{
-          width: 600,
-          height: 400,
-          background: `radial-gradient(ellipse at center, rgba(139,26,43,0.12) 0%, transparent 70%)`,
-        }}
-      />
-
       <motion.div
         variants={container}
         initial="hidden"
@@ -219,10 +184,10 @@ export default function Home() {
             <Typography
               variant="h1"
               sx={{
-                fontSize: { xs: '3.5rem', sm: '4.5rem' },
-                letterSpacing: 12,
+                fontSize: { xs: '2.8rem', sm: '4rem' },
+                letterSpacing: { xs: 8, sm: 12 },
                 color: colors.gold,
-                textShadow: `0 0 40px rgba(201,168,76,0.3), 0 0 80px rgba(201,168,76,0.1)`,
+                textShadow: '0 0 40px rgba(201,168,76,0.3), 0 0 80px rgba(201,168,76,0.1)',
                 fontFamily: '"Cinzel Decorative", serif',
                 fontWeight: 900,
               }}
@@ -233,13 +198,13 @@ export default function Home() {
         </motion.div>
 
         {/* Tagline */}
-        <motion.div variants={item} className="mb-6 text-center">
+        <motion.div variants={item} className="mb-4 text-center sm:mb-6">
           <Typography
             variant="subtitle1"
             sx={{
               color: colors.textSecondary,
-              letterSpacing: 6,
-              fontSize: '0.85rem',
+              letterSpacing: { xs: 4, sm: 6 },
+              fontSize: { xs: '0.7rem', sm: '0.85rem' },
               fontWeight: 500,
             }}
           >
@@ -252,7 +217,7 @@ export default function Home() {
         </motion.div>
 
         {/* Description */}
-        <motion.div variants={item} className="mb-8 mt-6 text-center">
+        <motion.div variants={item} className="mb-6 mt-4 text-center sm:mb-8 sm:mt-6">
           <Typography
             variant="body1"
             sx={{
@@ -260,7 +225,8 @@ export default function Home() {
               maxWidth: 420,
               mx: 'auto',
               lineHeight: 1.8,
-              fontSize: '0.95rem',
+              fontSize: { xs: '0.85rem', sm: '0.95rem' },
+              px: 1,
             }}
           >
             In the corrupt city-state of Coup, you are the head of a powerful family.
@@ -270,7 +236,7 @@ export default function Home() {
         </motion.div>
 
         {/* Characters showcase toggle */}
-        <motion.div variants={item} className="mb-6 w-full">
+        <motion.div variants={item} className="mb-4 w-full sm:mb-6">
           <Button
             variant="text"
             fullWidth
@@ -280,7 +246,7 @@ export default function Home() {
             }}
             sx={{
               color: colors.teal,
-              fontSize: '0.8rem',
+              fontSize: { xs: '0.7rem', sm: '0.8rem' },
               letterSpacing: 2,
               py: 1,
               '&:hover': { bgcolor: 'rgba(74,158,161,0.08)' },
@@ -307,7 +273,7 @@ export default function Home() {
                       transition={{ delay: i * 0.08, type: 'spring', stiffness: 200 }}
                     >
                       <Box
-                        className="flex items-start gap-3 rounded-lg p-3"
+                        className="flex items-center gap-3 rounded-lg p-2.5 sm:p-3"
                         sx={{
                           bgcolor: 'rgba(255,255,255,0.02)',
                           border: '1px solid rgba(255,255,255,0.05)',
@@ -316,25 +282,40 @@ export default function Home() {
                         }}
                         onMouseEnter={() => play('hover')}
                       >
-                        <Box
-                          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md"
-                          sx={{
-                            bgcolor: `rgba(139,26,43,0.15)`,
-                            border: `1px solid rgba(139,26,43,0.3)`,
-                          }}
-                        >
-                          <Typography sx={{ color: colors.gold, fontSize: '0.7rem', fontWeight: 800, fontFamily: '"Cinzel", serif' }}>
-                            {char.name[0]}
-                          </Typography>
+                        <Box sx={{ flexShrink: 0 }}>
+                          <CharacterAvatar card={char.name} size={40} />
                         </Box>
-                        <Box>
-                          <Typography variant="body2" sx={{ color: colors.gold, fontWeight: 700, fontSize: '0.8rem' }}>
+                        <Box className="min-w-0">
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: char.accent,
+                              fontWeight: 700,
+                              fontSize: { xs: '0.75rem', sm: '0.8rem' },
+                            }}
+                          >
                             {char.name}
-                            <Typography component="span" sx={{ color: colors.teal, ml: 1, fontSize: '0.7rem', fontWeight: 500 }}>
+                            <Typography
+                              component="span"
+                              sx={{
+                                color: colors.teal,
+                                ml: 1,
+                                fontSize: '0.65rem',
+                                fontWeight: 500,
+                              }}
+                            >
                               {char.power}
                             </Typography>
                           </Typography>
-                          <Typography variant="caption" sx={{ color: colors.textMuted, fontSize: '0.75rem', lineHeight: 1.4 }}>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: colors.textMuted,
+                              fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                              lineHeight: 1.4,
+                              display: 'block',
+                            }}
+                          >
                             {char.description}
                           </Typography>
                         </Box>
@@ -352,7 +333,7 @@ export default function Home() {
         </motion.div>
 
         {/* Name input */}
-        <motion.div variants={item} className="mt-6 w-full">
+        <motion.div variants={item} className="mt-4 w-full sm:mt-6">
           <TextField
             label="Your Name"
             variant="outlined"
@@ -386,7 +367,7 @@ export default function Home() {
         </AnimatePresence>
 
         {/* Create Room card */}
-        <motion.div variants={item} className="mt-4 w-full">
+        <motion.div variants={item} className="mt-3 w-full sm:mt-4">
           <Card
             component={motion.div}
             whileHover={{ scale: 1.01 }}
@@ -408,21 +389,22 @@ export default function Home() {
               play('click');
             }}
           >
-            <CardContent sx={{ p: 3 }}>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
               <Box className="flex items-center gap-3">
                 <Box
-                  className="flex h-10 w-10 items-center justify-center rounded-lg"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg sm:h-10 sm:w-10"
                   sx={{
                     background: `linear-gradient(135deg, ${colors.crimson}, ${colors.crimsonLight})`,
+                    flexShrink: 0,
                   }}
                 >
                   <Typography sx={{ color: '#fff', fontSize: '1.2rem', fontWeight: 800, fontFamily: '"Cinzel", serif' }}>+</Typography>
                 </Box>
-                <Box>
-                  <Typography variant="h6" sx={{ color: colors.gold, fontWeight: 700, fontSize: '1rem' }}>
+                <Box className="min-w-0">
+                  <Typography variant="h6" sx={{ color: colors.gold, fontWeight: 700, fontSize: { xs: '0.9rem', sm: '1rem' } }}>
                     Create a Room
                   </Typography>
-                  <Typography variant="caption" sx={{ color: colors.textMuted }}>
+                  <Typography variant="caption" sx={{ color: colors.textMuted, fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
                     Start a new game and invite friends
                   </Typography>
                 </Box>
@@ -464,7 +446,7 @@ export default function Home() {
                           },
                           fontWeight: 700,
                           py: 1.5,
-                          fontSize: '0.95rem',
+                          fontSize: { xs: '0.85rem', sm: '0.95rem' },
                           letterSpacing: 1,
                         }}
                       >
@@ -501,21 +483,22 @@ export default function Home() {
               play('click');
             }}
           >
-            <CardContent sx={{ p: 3 }}>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
               <Box className="flex items-center gap-3">
                 <Box
-                  className="flex h-10 w-10 items-center justify-center rounded-lg"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg sm:h-10 sm:w-10"
                   sx={{
                     background: `linear-gradient(135deg, ${colors.tealDark}, ${colors.teal})`,
+                    flexShrink: 0,
                   }}
                 >
                   <Typography sx={{ color: '#fff', fontSize: '1rem', fontWeight: 800 }}>&#8594;</Typography>
                 </Box>
-                <Box>
-                  <Typography variant="h6" sx={{ color: colors.gold, fontWeight: 700, fontSize: '1rem' }}>
+                <Box className="min-w-0">
+                  <Typography variant="h6" sx={{ color: colors.gold, fontWeight: 700, fontSize: { xs: '0.9rem', sm: '1rem' } }}>
                     Join a Room
                   </Typography>
-                  <Typography variant="caption" sx={{ color: colors.textMuted }}>
+                  <Typography variant="caption" sx={{ color: colors.textMuted, fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
                     Enter a room code to join an existing game
                   </Typography>
                 </Box>
@@ -563,7 +546,7 @@ export default function Home() {
                           },
                           fontWeight: 700,
                           py: 1.5,
-                          fontSize: '0.95rem',
+                          fontSize: { xs: '0.85rem', sm: '0.95rem' },
                           letterSpacing: 1,
                         }}
                       >
@@ -577,15 +560,40 @@ export default function Home() {
           </Card>
         </motion.div>
 
+        {/* Rules link */}
+        <motion.div variants={item} className="mt-4 w-full sm:mt-6">
+          <Button
+            variant="outlined"
+            fullWidth
+            onClick={() => {
+              play('click');
+              navigate('/rules');
+            }}
+            sx={{
+              borderColor: `${colors.gold}30`,
+              color: colors.gold,
+              fontSize: { xs: '0.75rem', sm: '0.85rem' },
+              letterSpacing: 2,
+              py: 1.2,
+              '&:hover': {
+                borderColor: colors.gold,
+                bgcolor: `${colors.gold}08`,
+              },
+            }}
+          >
+            VIEW RULES & CHARACTERS
+          </Button>
+        </motion.div>
+
         {/* Rules summary */}
-        <motion.div variants={item} className="mt-8 w-full text-center">
+        <motion.div variants={item} className="mt-4 w-full text-center sm:mt-6">
           <Typography
             variant="caption"
             sx={{
               color: colors.textMuted,
               display: 'block',
               lineHeight: 1.8,
-              fontSize: '0.75rem',
+              fontSize: { xs: '0.65rem', sm: '0.75rem' },
             }}
           >
             2-6 players &middot; Claim roles, call bluffs, and be the last one standing.
@@ -597,7 +605,7 @@ export default function Home() {
         {/* Bottom decorative element */}
         <motion.div
           variants={item}
-          className="mt-6"
+          className="mt-4 sm:mt-6"
         >
           <motion.div
             animate={{ opacity: [0.3, 0.6, 0.3] }}

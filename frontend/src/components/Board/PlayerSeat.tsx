@@ -19,9 +19,9 @@ const pulseVariants: Variants = {
   idle: { boxShadow: '0 0 0 0px rgba(139,26,43,0)' },
   active: {
     boxShadow: [
-      '0 0 0 0px rgba(139,26,43,0.6)',
-      '0 0 0 8px rgba(139,26,43,0)',
-      '0 0 0 0px rgba(139,26,43,0)',
+      '0 0 0 0px rgba(201,168,76,0.6)',
+      '0 0 0 6px rgba(201,168,76,0)',
+      '0 0 0 0px rgba(201,168,76,0)',
     ],
     transition: { duration: 1.5, repeat: Infinity, ease: 'easeInOut' },
   },
@@ -37,13 +37,18 @@ export interface PlayerSeatProps {
 export default function PlayerSeat({ player, cards, isCurrentTurn, isMe }: PlayerSeatProps) {
   return (
     <motion.div
-      className={`relative rounded-xl p-4 ${player.isAlive ? '' : 'grayscale'}`}
+      className={`relative rounded-xl ${isMe ? 'p-3 sm:p-4' : 'p-2 sm:p-3'} ${player.isAlive ? '' : 'grayscale'}`}
       variants={pulseVariants}
       animate={isCurrentTurn && player.isAlive ? 'active' : 'idle'}
       initial="idle"
       style={{
-        backgroundColor: isMe ? `${coupColors.gold}0a` : coupColors.navy,
-        border: isMe ? `2px solid ${coupColors.gold}40` : `1px solid rgba(255,255,255,0.06)`,
+        backgroundColor: isMe ? `${coupColors.gold}08` : `${coupColors.navy}cc`,
+        border: isMe
+          ? `2px solid ${coupColors.gold}40`
+          : isCurrentTurn
+            ? `1px solid ${coupColors.gold}30`
+            : '1px solid rgba(255,255,255,0.06)',
+        backdropFilter: 'blur(8px)',
       }}
     >
       {!player.isAlive && (
@@ -55,7 +60,7 @@ export default function PlayerSeat({ player, cards, isCurrentTurn, isMe }: Playe
               fontWeight: 800,
               letterSpacing: 3,
               fontFamily: '"Cinzel", serif',
-              fontSize: '0.75rem',
+              fontSize: { xs: '0.65rem', sm: '0.75rem' },
             }}
           >
             ELIMINATED
@@ -64,37 +69,77 @@ export default function PlayerSeat({ player, cards, isCurrentTurn, isMe }: Playe
       )}
 
       <Box className="mb-2 flex items-center justify-between">
-        <Typography
-          variant="subtitle1"
-          sx={{ fontWeight: 700, color: isMe ? coupColors.gold : coupColors.textPrimary, fontSize: '0.9rem' }}
-        >
-          {player.name}
-          {isMe && (
-            <Typography component="span" variant="caption" sx={{ ml: 0.5, color: coupColors.gold, opacity: 0.6, fontSize: '0.65rem' }}>
-              (You)
-            </Typography>
+        <Box className="flex items-center gap-1.5 overflow-hidden">
+          {isCurrentTurn && player.isAlive && (
+            <Box
+              sx={{
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                bgcolor: coupColors.gold,
+                flexShrink: 0,
+                boxShadow: `0 0 6px ${coupColors.gold}`,
+              }}
+            />
           )}
-        </Typography>
+          <Typography
+            sx={{
+              fontWeight: 700,
+              color: isMe ? coupColors.gold : coupColors.textPrimary,
+              fontSize: { xs: '0.75rem', sm: '0.85rem' },
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {player.name}
+            {isMe && (
+              <Typography
+                component="span"
+                sx={{
+                  ml: 0.5,
+                  color: coupColors.gold,
+                  opacity: 0.6,
+                  fontSize: { xs: '0.55rem', sm: '0.6rem' },
+                }}
+              >
+                (You)
+              </Typography>
+            )}
+          </Typography>
+        </Box>
 
-        <Box className="flex items-center gap-1">
+        <Box className="flex items-center gap-1" sx={{ flexShrink: 0 }}>
           <CoinIcon />
-          <Typography variant="body2" sx={{ color: coupColors.gold, fontWeight: 700 }}>
+          <Typography variant="body2" sx={{ color: coupColors.gold, fontWeight: 700, fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
             {player.coins}
           </Typography>
         </Box>
       </Box>
 
-      <Box className="flex gap-2">
+      <Box className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
         {isMe
           ? cards.map((c) => (
-              <InfluenceCard key={c.id} card={c.card} isRevealed={c.is_revealed || true} />
+              <InfluenceCard
+                key={c.id}
+                card={c.card}
+                isRevealed
+                isDead={c.is_revealed}
+                compact
+              />
             ))
           : cards.map((c) => (
-              <InfluenceCard key={c.id} card={c.is_revealed ? c.card : null} isRevealed={c.is_revealed} />
+              <InfluenceCard
+                key={c.id}
+                card={c.is_revealed ? c.card : null}
+                isRevealed={c.is_revealed}
+                isDead={c.is_revealed}
+                compact
+              />
             ))}
 
         {player.revealedCards.map((rc, i) => (
-          <InfluenceCard key={`rev-${i}`} card={rc} isRevealed />
+          <InfluenceCard key={`rev-${i}`} card={rc} isRevealed isDead compact />
         ))}
       </Box>
     </motion.div>
