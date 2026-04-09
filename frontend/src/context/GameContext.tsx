@@ -3,12 +3,11 @@ import {
   useContext,
   useEffect,
   useReducer,
-  useRef,
   type Dispatch,
   type ReactNode,
 } from 'react';
 import { useSocket } from './SocketContext';
-import { storeSession, clearSession, getSession } from '../types/session';
+import { storeSession, clearSession } from '../types/session';
 import type {
   GameState,
   GameLogEntry,
@@ -64,54 +63,6 @@ const initialState: ClientGameState = {
 };
 
 // ---------------------------------------------------------------------------
-// Session-based state persistence
-// ---------------------------------------------------------------------------
-
-const STATE_STORAGE_KEY = 'coup_game_state';
-
-function persistState(state: ClientGameState): void {
-  try {
-    const toSave = {
-      roomCode: state.roomCode,
-      myPlayerId: state.myPlayerId,
-      myCards: state.myCards,
-      gameState: state.gameState,
-      phase: state.phase,
-      lobbyPlayers: state.lobbyPlayers,
-      winner: state.winner,
-    };
-    sessionStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(toSave));
-  } catch {
-    // Storage full or unavailable — ignore
-  }
-}
-
-function loadPersistedState(): ClientGameState {
-  try {
-    const raw = sessionStorage.getItem(STATE_STORAGE_KEY);
-    if (!raw) return initialState;
-    const saved = JSON.parse(raw) as Partial<ClientGameState>;
-    const session = getSession();
-    if (!session || saved.roomCode !== session.roomCode) {
-      sessionStorage.removeItem(STATE_STORAGE_KEY);
-      return initialState;
-    }
-    return {
-      ...initialState,
-      roomCode: saved.roomCode ?? null,
-      myPlayerId: saved.myPlayerId ?? session.playerId,
-      myCards: saved.myCards ?? [],
-      gameState: saved.gameState ?? null,
-      phase: saved.phase ?? 'lobby',
-      lobbyPlayers: saved.lobbyPlayers ?? [],
-      winner: saved.winner ?? null,
-    };
-  } catch {
-    return initialState;
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Discriminated union of actions
 // ---------------------------------------------------------------------------
 
@@ -146,16 +97,6 @@ function gameReducer(state: ClientGameState, action: GameAction): ClientGameStat
     case 'ROOM_JOINED': {
       const { playerId, roomCode, players, playerName } = action.payload;
       storeSession({ playerId, playerName, roomCode });
-      // If we have an active game state (reconnecting mid-game), keep it
-      if (state.gameState && state.phase !== 'lobby') {
-        return {
-          ...state,
-          roomCode,
-          myPlayerId: playerId,
-          lobbyPlayers: players,
-          lastError: null,
-        };
-      }
       return {
         ...state,
         roomCode,
@@ -234,7 +175,6 @@ function gameReducer(state: ClientGameState, action: GameAction): ClientGameStat
 
     case 'RESET': {
       clearSession();
-      sessionStorage.removeItem(STATE_STORAGE_KEY);
       return initialState;
     }
 
@@ -285,17 +225,8 @@ const GameContext = createContext<GameContextValue | null>(null);
 // ---------------------------------------------------------------------------
 
 export function GameProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(gameReducer, undefined, loadPersistedState);
+  const [state, dispatch] = useReducer(gameReducer, initialState);
   const { socket } = useSocket();
-  const prevStateRef = useRef(state);
-
-  // Persist state changes to sessionStorage
-  useEffect(() => {
-    if (state !== prevStateRef.current) {
-      prevStateRef.current = state;
-      persistState(state);
-    }
-  });
 
   useEffect(() => {
     if (!socket) return;

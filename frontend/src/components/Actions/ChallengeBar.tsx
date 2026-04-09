@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Button, Stack, Typography, Menu, MenuItem, Box } from '@mui/material';
 import { motion } from 'framer-motion';
 import { coupColors } from '../../theme/ThemeProvider';
@@ -31,58 +31,60 @@ export default function ChallengeBar({
 }: ChallengeBarProps) {
   const [blockAnchor, setBlockAnchor] = useState<HTMLElement | null>(null);
   const [responded, setResponded] = useState(false);
-  const [animDuration] = useState(() => Math.max(timeLeft, MIN_DISPLAY_MS) / 1000);
-  const onPassRef = useRef(onPass);
-  const timerMs = useRef(Math.max(timeLeft, MIN_DISPLAY_MS));
+  const respondedRef = useRef(false);
 
-  useEffect(() => {
-    onPassRef.current = onPass;
+  const actionKey = useMemo(
+    () => `${pendingAction.actorId}-${pendingAction.action}-${pendingAction.targetId ?? ''}`,
+    [pendingAction.actorId, pendingAction.action, pendingAction.targetId],
+  );
+
+  const effectiveTimeMs = useMemo(
+    () => Math.max(timeLeft, MIN_DISPLAY_MS),
+    [timeLeft],
+  );
+
+  const handlePass = useCallback(() => {
+    if (respondedRef.current) return;
+    respondedRef.current = true;
+    setResponded(true);
+    onPass();
   }, [onPass]);
 
-  useEffect(() => {
-    setResponded(false);
-    timerMs.current = Math.max(timeLeft, MIN_DISPLAY_MS);
-  }, [pendingAction.actorId, pendingAction.action, timeLeft]);
-
-  const safePass = useCallback(() => {
-    setResponded((prev) => {
-      if (prev) return prev;
-      onPassRef.current();
-      return true;
-    });
-  }, []);
-
-  const safeChallenge = useCallback(() => {
-    setResponded((prev) => {
-      if (prev) return prev;
-      onChallenge();
-      return true;
-    });
+  const handleChallenge = useCallback(() => {
+    if (respondedRef.current) return;
+    respondedRef.current = true;
+    setResponded(true);
+    onChallenge();
   }, [onChallenge]);
 
-  const safeBlock = useCallback(
+  const handleBlock = useCallback(
     (card: CardType) => {
-      setResponded((prev) => {
-        if (prev) return prev;
-        onBlock(card);
-        return true;
-      });
+      if (respondedRef.current) return;
+      respondedRef.current = true;
+      setResponded(true);
+      onBlock(card);
     },
     [onBlock],
   );
 
   useEffect(() => {
-    const ms = timerMs.current;
-    if (ms <= 0) return;
-    const timer = setTimeout(safePass, ms);
+    if (effectiveTimeMs <= 0) return;
+    const timer = setTimeout(() => {
+      if (!respondedRef.current) {
+        respondedRef.current = true;
+        setResponded(true);
+        onPass();
+      }
+    }, effectiveTimeMs);
     return () => clearTimeout(timer);
-  }, [safePass]);
+  }, [actionKey, effectiveTimeMs, onPass]);
 
   const isActor = pendingAction.actorId === myPlayerId;
   if (isActor) return null;
 
   const actorName = players[pendingAction.actorId]?.name ?? 'Someone';
   const actionLabel = pendingAction.action.replace(/_/g, ' ');
+  const animDuration = effectiveTimeMs / 1000;
 
   return (
     <Box
@@ -95,6 +97,7 @@ export default function ChallengeBar({
     >
       <div className="absolute left-0 top-0 h-1 w-full overflow-hidden rounded-t-xl">
         <motion.div
+          key={actionKey}
           className="h-full"
           style={{ backgroundColor: coupColors.crimsonLight }}
           initial={{ width: '100%' }}
@@ -130,7 +133,7 @@ export default function ChallengeBar({
             variant="contained"
             size="small"
             disabled={disabled || responded}
-            onClick={safeChallenge}
+            onClick={handleChallenge}
             sx={{
               background: `linear-gradient(135deg, ${coupColors.crimson}, ${coupColors.crimsonLight})`,
               '&:hover': { background: `linear-gradient(135deg, ${coupColors.crimsonLight}, ${coupColors.crimson})` },
@@ -165,7 +168,7 @@ export default function ChallengeBar({
             variant="text"
             size="small"
             disabled={disabled || responded}
-            onClick={safePass}
+            onClick={handlePass}
             sx={{
               color: coupColors.textMuted,
               fontSize: { xs: '0.7rem', sm: '0.8rem' },
@@ -188,7 +191,7 @@ export default function ChallengeBar({
           <MenuItem
             key={card}
             onClick={() => {
-              safeBlock(card);
+              handleBlock(card);
               setBlockAnchor(null);
             }}
             sx={{ color: coupColors.textPrimary, '&:hover': { bgcolor: `${coupColors.gold}12` } }}

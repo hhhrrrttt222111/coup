@@ -12,7 +12,7 @@ const Player = {
 
   async findByRoom(roomId: string): Promise<PlayerType[]> {
     const { rows } = await db.query<PlayerType>(
-      `SELECT * FROM players WHERE room_id = $1 ORDER BY name`,
+      `SELECT * FROM players WHERE room_id = $1 ORDER BY created_at`,
       [roomId],
     );
     return rows;

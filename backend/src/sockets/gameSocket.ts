@@ -407,6 +407,46 @@ export default function registerGameSocket(io: TypedServer): void {
               cardRevealed: p.cardRevealed as CardType,
             });
           }
+
+          // Challenge failed and action is blockable → moved to block phase.
+          // Emit await_response so the frontend shows the block/pass UI.
+          if (newState.phase === 'block' && newState.pendingAction) {
+            const pending = newState.pendingAction;
+            io.in(roomCode).emit('await_response', {
+              phase: newState.phase,
+              actorId: pending.actorId,
+              action: pending.action,
+              targetId: pending.targetId,
+              claimedCard: pending.claimedCard,
+              deadline: Date.now() + RESPONSE_DEADLINE_MS,
+            });
+
+            const snapshot = newState;
+            setTimeout(() => {
+              const current = gameStates.get(roomCode);
+              if (current === snapshot) {
+                try {
+                  let resolved = current;
+                  const alive = resolved.turnOrder.filter(
+                    (id) => id !== pending.actorId && resolved.players.get(id)?.isAlive,
+                  );
+                  for (const id of alive) {
+                    if (!resolved.respondents.has(id)) {
+                      resolved = engine.processResponse(resolved, id, 'pass');
+                    }
+                  }
+                  saveState(roomCode, resolved);
+                  broadcastSanitizedState(io, roomCode, resolved);
+
+                  if (resolved.phase === 'game_over' && resolved.winner) {
+                    emitGameOver(io, roomCode, resolved);
+                  }
+                } catch (e) {
+                  console.error('Block-after-challenge deadline auto-resolve error:', e);
+                }
+              }
+            }, RESPONSE_DEADLINE_MS);
+          }
         }
 
         // ── Block declared ──────────────────────────────────────────────

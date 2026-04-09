@@ -56,11 +56,14 @@ export default function GameRoom() {
   }, [verified, connected, socket, code]);
 
   useEffect(() => {
-    if (state.disconnectedPlayer) {
-      setSnackMessage(`${state.disconnectedPlayer.playerName} disconnected`);
+    const d = state.disconnectedPlayer;
+    if (!d) return;
+    const name = d.playerName;
+    queueMicrotask(() => {
+      setSnackMessage(`${name} disconnected`);
       setSnackOpen(true);
       dispatch({ type: 'CLEAR_DISCONNECT' });
-    }
+    });
   }, [state.disconnectedPlayer, dispatch]);
 
   const handleSnackClose = useCallback(() => setSnackOpen(false), []);

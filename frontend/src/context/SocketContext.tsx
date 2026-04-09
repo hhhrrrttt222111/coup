@@ -33,7 +33,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       withCredentials: true,
     });
 
-    setSocket(s);
+    queueMicrotask(() => setSocket(s));
 
     s.on('connect', () => setConnected(true));
     s.on('disconnect', () => setConnected(false));
@@ -41,7 +41,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     return () => {
       s.removeAllListeners();
       s.disconnect();
-      setSocket(null);
+      queueMicrotask(() => setSocket(null));
     };
   }, []);
 

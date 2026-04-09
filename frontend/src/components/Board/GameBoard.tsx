@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { Box, Typography, Button, IconButton, Drawer } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import HomeIcon from '@mui/icons-material/Home';
@@ -144,6 +144,16 @@ export default function GameBoard() {
   const navigate = useNavigate();
   const [logOpen, setLogOpen] = useState(false);
   const [detailCard, setDetailCard] = useState<CardType | null>(null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    const awaiting = state.awaitingResponse;
+    if (!awaiting) return;
+    const tick = () => setNowMs(Date.now());
+    queueMicrotask(tick);
+    const id = window.setInterval(tick, 250);
+    return () => window.clearInterval(id);
+  }, [state.awaitingResponse]);
 
   const handlePassAction = useCallback(() => respondToAction('pass'), [respondToAction]);
   const handleChallengeAction = useCallback(() => respondToAction('challenge'), [respondToAction]);
@@ -182,8 +192,11 @@ export default function GameBoard() {
   };
 
   const awaiting = state.awaitingResponse;
-  const timeLeft = awaiting ? Math.max(0, awaiting.deadline - Date.now()) : 0;
+  const timeLeft = awaiting ? Math.max(0, awaiting.deadline - nowMs) : 0;
   const blockOptions: CardType[] = awaiting ? [...(BLOCK_CARDS[awaiting.action] ?? [])] : [];
+  const challengeBarKey = gs.pendingAction
+    ? `${gs.pendingAction.actorId}-${gs.pendingAction.action}-${gs.pendingAction.targetId ?? ''}`
+    : 'challenge-bar';
 
   const showActionPanel = gs.phase === 'action' && myTurn;
   const showChallengeBar =
@@ -348,6 +361,7 @@ export default function GameBoard() {
                 transition={{ duration: 0.25 }}
               >
                 <ChallengeBar
+                  key={challengeBarKey}
                   pendingAction={gs.pendingAction}
                   timeLeft={timeLeft}
                   onChallenge={handleChallengeAction}

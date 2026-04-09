@@ -33,17 +33,13 @@ export default function useActions(): UseActionsReturn {
   const setKey = (key: LoadingKey, val: boolean) =>
     setLoading((prev) => ({ ...prev, [key]: val }));
 
-  const getRoomCode = (): string => {
-    const code = state.roomCode;
-    if (!code) throw new Error('Not in a room');
-    return code;
-  };
-
   const performAction = useCallback(
     (action: ActionType, targetId?: string) => {
       if (!socket) return;
+      const roomCode = state.roomCode;
+      if (!roomCode) return;
       setKey(action, true);
-      socket.emit('game_action', { roomCode: getRoomCode(), action, targetId });
+      socket.emit('game_action', { roomCode, action, targetId });
       // Loading is cleared when the next state_update arrives (handled by GameContext)
       setTimeout(() => setKey(action, false), 2000);
     },
@@ -53,9 +49,11 @@ export default function useActions(): UseActionsReturn {
   const respondToAction = useCallback(
     (response: 'pass' | 'block' | 'challenge', blockCard?: CardType) => {
       if (!socket) return;
+      const roomCode = state.roomCode;
+      if (!roomCode) return;
       const key: LoadingKey = response === 'block' ? 'block' : response === 'challenge' ? 'challenge' : 'response';
       setKey(key, true);
-      socket.emit('player_response', { roomCode: getRoomCode(), response, blockCard });
+      socket.emit('player_response', { roomCode, response, blockCard });
       setTimeout(() => setKey(key, false), 2000);
     },
     [socket, state.roomCode],
@@ -63,16 +61,20 @@ export default function useActions(): UseActionsReturn {
 
   const challengeBlock = useCallback(() => {
     if (!socket) return;
+    const roomCode = state.roomCode;
+    if (!roomCode) return;
     setKey('challenge', true);
-    socket.emit('block_challenge', { roomCode: getRoomCode() });
+    socket.emit('block_challenge', { roomCode });
     setTimeout(() => setKey('challenge', false), 2000);
   }, [socket, state.roomCode]);
 
   const loseInfluence = useCallback(
     (cardIndex: number) => {
       if (!socket) return;
+      const roomCode = state.roomCode;
+      if (!roomCode) return;
       setKey('loseInfluence', true);
-      socket.emit('lose_influence', { roomCode: getRoomCode(), cardIndex });
+      socket.emit('lose_influence', { roomCode, cardIndex });
       setTimeout(() => setKey('loseInfluence', false), 2000);
     },
     [socket, state.roomCode],
